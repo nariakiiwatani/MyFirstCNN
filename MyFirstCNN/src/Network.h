@@ -20,14 +20,13 @@ public:
 	template<typename L> std::shared_ptr<L> getLayer(const std::string &name);
 	bool addLayer(const std::string &name);
 	bool addLayer(const std::string &name, std::shared_ptr<Layer> layer);
-	const MatrixArray& getResult(int index, int index_layer=-1) const;
-	std::size_t getNumLayers() const { return layers_order_.size(); }
-	std::size_t size() const { return result_of_each_layer_.size(); }
-	MatrixArray proc(const Matrix &m, int index=0);
+	std::size_t size() const { return layers_order_.size(); }
+	Tensor proc(const Tensor &t);
+	std::vector<Tensor>& getHistory() { return history_; }
 protected:
 	std::map<std::string, std::shared_ptr<Layer>> layers_;
 	std::vector<std::string> layers_order_;
-	std::vector<std::vector<MatrixArray>> result_of_each_layer_;
+	std::vector<Tensor> history_;
 };
 
 template<typename L>

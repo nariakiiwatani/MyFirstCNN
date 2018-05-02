@@ -7,46 +7,49 @@
 void ofApp::setup(){
 	{
 		// image to be classified
-		test_.resize(9, 9);
-		test_ <<
-		-1,-1,-1,-1,-1,-1,-1,-1,-1,
-		-1, 1,-1,-1,-1,-1,-1, 1,-1,
-		-1,-1, 1,-1,-1,-1, 1,-1,-1,
-		-1,-1,-1, 1,-1, 1,-1,-1,-1,
-		-1,-1,-1,-1, 1,-1,-1,-1,-1,
-		-1,-1,-1, 1,-1, 1,-1,-1,-1,
-		-1,-1, 1,-1,-1,-1, 1,-1,-1,
-		-1, 1,-1,-1,-1,-1,-1, 1,-1,
-		-1,-1,-1,-1,-1,-1,-1,-1,-1;
+		test_.resize(9, 9, 1);
+		test_.slice(0) = {
+			{-1,-1,-1,-1,-1,-1,-1,-1,-1},
+			{-1, 1,-1,-1,-1,-1,-1, 1,-1},
+			{-1,-1, 1,-1,-1,-1, 1,-1,-1},
+			{-1,-1,-1, 1,-1, 1,-1,-1,-1},
+			{-1,-1,-1,-1, 1,-1,-1,-1,-1},
+			{-1,-1,-1, 1,-1, 1,-1,-1,-1},
+			{-1,-1, 1,-1,-1,-1, 1,-1,-1},
+			{-1, 1,-1,-1,-1,-1,-1, 1,-1},
+			{-1,-1,-1,-1,-1,-1,-1,-1,-1}
+		};
 	}
 	{
 		// class 1 (X)
-		Matrix m(9, 9);
-		m <<
-		-1,-1,-1,-1,-1,-1,-1,-1,-1,
-		-1, 1,-1,-1,-1,-1,-1, 1,-1,
-		-1,-1, 1,-1,-1,-1, 1,-1,-1,
-		-1,-1,-1, 1,-1, 1,-1,-1,-1,
-		-1,-1,-1,-1, 1,-1,-1,-1,-1,
-		-1,-1,-1, 1,-1, 1,-1,-1,-1,
-		-1,-1, 1,-1,-1,-1, 1,-1,-1,
-		-1, 1,-1,-1,-1,-1,-1, 1,-1,
-		-1,-1,-1,-1,-1,-1,-1,-1,-1;
+		Tensor m(9, 9, 1);
+		m.slice(0) = {
+			{-1,-1,-1,-1,-1,-1,-1,-1,-1},
+			{-1, 1,-1,-1,-1,-1,-1, 1,-1},
+			{-1,-1, 1,-1,-1,-1, 1,-1,-1},
+			{-1,-1,-1, 1,-1, 1,-1,-1,-1},
+			{-1,-1,-1,-1, 1,-1,-1,-1,-1},
+			{-1,-1,-1, 1,-1, 1,-1,-1,-1},
+			{-1,-1, 1,-1,-1,-1, 1,-1,-1},
+			{-1, 1,-1,-1,-1,-1,-1, 1,-1},
+			{-1,-1,-1,-1,-1,-1,-1,-1,-1}
+		};
 		classes_.push_back(m);
 	}
 	{
 		// class 2 (O)
-		Matrix m(9, 9);
-		m <<
-		-1,-1,-1,-1,-1,-1,-1,-1,-1,
-		-1,-1,-1, 1, 1, 1,-1,-1,-1,
-		-1,-1, 1,-1,-1,-1, 1,-1,-1,
-		-1, 1,-1,-1,-1,-1,-1, 1,-1,
-		-1, 1,-1,-1,-1,-1,-1, 1,-1,
-		-1, 1,-1,-1,-1,-1,-1, 1,-1,
-		-1,-1, 1,-1,-1,-1, 1,-1,-1,
-		-1,-1,-1, 1, 1, 1,-1,-1,-1,
-		-1,-1,-1,-1,-1,-1,-1,-1,-1;
+		Tensor m(9, 9, 1);
+		m.slice(0) = {
+			{-1,-1,-1,-1,-1,-1,-1,-1,-1},
+			{-1,-1,-1, 1, 1, 1,-1,-1,-1},
+			{-1,-1, 1,-1,-1,-1, 1,-1,-1},
+			{-1, 1,-1,-1,-1,-1,-1, 1,-1},
+			{-1, 1,-1,-1,-1,-1,-1, 1,-1},
+			{-1, 1,-1,-1,-1,-1,-1, 1,-1},
+			{-1,-1, 1,-1,-1,-1, 1,-1,-1},
+			{-1,-1,-1, 1, 1, 1,-1,-1,-1},
+			{-1,-1,-1,-1,-1,-1,-1,-1,-1}
+		};
 		classes_.push_back(m);
 	}
 	
@@ -100,20 +103,20 @@ void ofApp::draw(){
 				preview = test_;
 			}
 			else {
-				preview = classes_[draw_model_index_];
+				preview = classes_[draw_model_index_-1];
 			}
 			range.set(-1,1);
 			break;
 		case DRAW_FILTER:
-			preview = convolution_->filter_[draw_filter_index_];
+			preview = convolution_->filter_.slice(draw_filter_slice_);
 			range.set(-1,1);
 			break;
-		case DRAW_analyzer:
-			preview = analyzer_->getResult(draw_analyzer_index_, draw_analyzer_index_sub_)[draw_analyzer_index_sub2_];
+		case DRAW_ANALYZER:
+			preview = analyzer_history_[draw_analyzer_class_][draw_analyzer_layer_].slice(draw_analyzer_slice_);
 			range.set(0,1);
 			break;
 		case DRAW_CLASSIFIER:
-			preview = classifier_->getResult(draw_classifier_index_)[0];
+			preview = result_.slice(0);
 			range.set(0,1);
 			break;
 	}
@@ -121,34 +124,35 @@ void ofApp::draw(){
 	ofImage(convert(preview, range[0], range[1])).draw(ofGetCurrentViewport());
 	
 	auto pixelsEditor = [](Matrix &matrix) {
+		arma::inplace_trans(matrix);
 		bool edited = false;
-		int size[2] = {(int)matrix.cols(),(int)matrix.rows()};
+		int size[2] = {(int)matrix.n_cols, (int)matrix.n_rows};
 		if(ImGui::SliderInt2("size", size, 1, 32)) {
-			matrix.conservativeResize(size[1], size[0]);
+			matrix.resize(size[1], size[0]);
 			edited |= true;
 		}
 		
-		for(int i = 0, num = matrix.rows(); i < num; ++i) {
-			auto row = matrix.row(i).array();
-			auto data = row.data();
+		matrix.each_col([&edited](Col &col) {
+			auto *data = col.memptr();
 			ImGui::PushID(data);
-			edited |= ImGui::DragFloatN("", data, row.size(), 0.01f, -1, 1, "%.2f", 1);
+			edited |= ImGui::DragFloatN("", data, col.size(), 0.01f, -1, 1, "%.2f", 1);
 			ImGui::PopID();
-		}
+		});
+		arma::inplace_trans(matrix);
 		return edited;
 	};
 	
 	gui_.begin();
 	if(ImGui::Begin("Input")) {
 		if(ImGui::TreeNode("input image")) {
-			if(pixelsEditor(test_)) {
+			if(pixelsEditor(test_.slice(0))) {
 				updateResult();
 			}
 			ImGui::TreePop();
 		}
 		for(auto &c : classes_) {
 			if(ImGui::TreeNode(&c, "%s", "supervisor")) {
-				if(pixelsEditor(c)) {
+				if(pixelsEditor(c.slice(0))) {
 					updateClassifier();
 				}
 				ImGui::TreePop();
@@ -157,20 +161,28 @@ void ofApp::draw(){
 	}
 	ImGui::End();
 	if(ImGui::Begin("Convolution filters")) {
-		for(auto &f : convolution_->filter_) {
-			ImGui::PushID(&f);
-			if(pixelsEditor(f)) {
+		
+		convolution_->filter_.each_slice([this,&pixelsEditor](Matrix &m) {
+			ImGui::PushID(&m);
+			if(pixelsEditor(m)) {
 				updateClassifier();
 			}
 			ImGui::PopID();
-		}
+		});
 	}
 	ImGui::End();
 	if(ImGui::Begin("Pooling size")) {
-		if(ImGui::SliderInt2("size", pooling_->size_, 1, 8)) {
+		int size[2] = {(int)pooling_->size_[0], (int)pooling_->size_[1]};
+		int stride[2] = {(int)pooling_->stride_[0], (int)pooling_->stride_[1]};
+
+		if(ImGui::SliderInt2("size", size, 1, 8)) {
+			pooling_->size_[0] = size[0];
+			pooling_->size_[1] = size[1];
 			updateClassifier();
 		}
-		if(ImGui::SliderInt2("stride", pooling_->stride_, 1, 8)) {
+		if(ImGui::SliderInt2("stride", stride, 1, 8)) {
+			pooling_->stride_[0] = stride[0];
+			pooling_->stride_[1] = stride[1];
 			updateClassifier();
 		}
 	}
@@ -182,16 +194,16 @@ void ofApp::draw(){
 	if(ImGui::Begin("Preview")) {
 		ImGui::SliderInt("mode", &draw_mode_, 0, DRAW_NUM-1);
 		switch(draw_mode_) {
+			case DRAW_INPUT:
+				ImGui::SliderInt("index", &draw_model_index_, 0, classes_.size());
+				break;
 			case DRAW_FILTER:
-				ImGui::SliderInt("index", &draw_filter_index_, 0, convolution_->filter_.size()-1);
+				ImGui::SliderInt("slice", &draw_filter_slice_, 0, convolution_->filter_.n_slices-1);
 				break;
-			case DRAW_analyzer:
-				ImGui::SliderInt("index", &draw_analyzer_index_, 0, analyzer_->size()-1);
-				ImGui::SliderInt("layer", &draw_analyzer_index_sub_, 0, analyzer_->getNumLayers()-1);
-				ImGui::SliderInt("sub", &draw_analyzer_index_sub2_, 0, analyzer_->getResult(draw_analyzer_index_, draw_analyzer_index_sub_).size()-1);
-				break;
-			case DRAW_CLASSIFIER:
-				ImGui::SliderInt("index", &draw_classifier_index_, 0, classifier_->size()-1);
+			case DRAW_ANALYZER:
+				ImGui::SliderInt("class", &draw_analyzer_class_, 0, analyzer_history_.size()-1);
+				ImGui::SliderInt("layer", &draw_analyzer_layer_, 0, analyzer_history_[draw_analyzer_class_].size()-1);
+				ImGui::SliderInt("slice", &draw_analyzer_slice_, 0, analyzer_history_[draw_analyzer_class_][draw_analyzer_layer_].n_slices-1);
 				break;
 		}
 		pixelsEditor(preview);
@@ -202,15 +214,17 @@ void ofApp::draw(){
 
 void ofApp::updateClassifier()
 {
+	analyzer_history_.resize(classes_.size());
 	for(int i = 0, num = classes_.size(); i < num; ++i) {
-		dense_->setWeightForOutNode(i, analyzer_->proc(classes_[i], i)[0]);
+		dense_->weight_.col(i) = analyzer_->proc(classes_[i]).slice(0).t();
+		analyzer_history_[i] = analyzer_->getHistory();
 	}
 	updateResult();
 }
 
 void ofApp::updateResult()
 {
-	classifier_->proc(test_);
+	result_ = classifier_->proc(test_);
 }
 
 //--------------------------------------------------------------

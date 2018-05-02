@@ -8,94 +8,82 @@
 
 #pragma once
 
-#include <Eigen/Core>
-#include <Eigen/StdVector>
+#include <armadillo>
 
-using Matrix = Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
-using MatrixArray = std::vector<Matrix, Eigen::aligned_allocator<Matrix>>;
+using Scalar = float;
+using Tensor = arma::Cube<Scalar>;
+using Matrix = arma::Mat<Scalar>;
+using Index = arma::uword;
+using Col = arma::Col<Scalar>;
+using Row = arma::Row<Scalar>;
 
 class Layer
 {
 public:
-	virtual MatrixArray proc(const MatrixArray &ma) {
-		int num = ma.size();
-		MatrixArray ret;
-		for(int i = 0; i < num; ++i) {
-			MatrixArray &&result = proc(ma[i], i);
-			ret.insert(std::end(ret), std::begin(result), std::end(result));
-		}
-		return ret;
-	}
-	virtual MatrixArray proc(const Matrix &m, int index)=0;
+	virtual Tensor proc(const Tensor &t)=0;
 };
 
 class Duplicate : public Layer
 {
-protected:
-	MatrixArray proc(const Matrix &m, int index);
 public:
-	int size_=1;
+	Tensor proc(const Tensor &t);
+public:
+	Index size_=1;
 };
 
 class Combine : public Layer
 {
 public:
-	MatrixArray proc(const MatrixArray &ma);
-protected:
-	MatrixArray proc(const Matrix &m, int index) { assert(false); }
+	Tensor proc(const Tensor &t);
 };
 
 class Convolution : public Layer
 {
 public:
 	Convolution();
-protected:
-	MatrixArray proc(const Matrix &m, int index);
+	Tensor proc(const Tensor &t);
 public:
-	MatrixArray filter_;
-	int padding_=0;
+	Tensor filter_;
+	Index padding_=0;
 };
 
 class Pooling : public Layer
 {
 public:
 	Pooling();
-protected:
-	MatrixArray proc(const Matrix &m, int index);
+	Tensor proc(const Tensor &t);
 public:
-	virtual Matrix::Scalar pool(const Matrix &m)=0;
-	int size_[2], stride_[2];
+	virtual Scalar pool(const Matrix &m)=0;
+	Index size_[2], stride_[2];
 };
 
 class MaxPooling : public Pooling
 {
 protected:
-	Matrix::Scalar pool(const Matrix &m);
+	Scalar pool(const Matrix &m);
 };
 
 class Activation : public Layer
 {
 protected:
-	MatrixArray proc(const Matrix &m, int index);
-	virtual Matrix::Scalar activate(Matrix::Scalar input)=0;
+	Tensor proc(const Tensor &t);
+	virtual Scalar activate(const Scalar &s)=0;
 };
 
 class ReLU : public Activation
 {
 protected:
-	Matrix::Scalar activate(Matrix::Scalar input);
+	Scalar activate(const Scalar &s);
 };
 
 
 class Dense : public Layer
 {
 public:
-	void setNumInOut(int num_in, int num_out);
-	void setWeightForOutNode(int index, const Matrix &weight);
-protected:
-	MatrixArray proc(const Matrix &m, int index);
+	void setNumInOut(Index num_in, Index num_out);
+	Tensor proc(const Tensor &t);
 public:
 	Matrix weight_;
-	Matrix::Scalar bias_=0;
-	Matrix::Scalar default_weight_=1;
+	Scalar bias_=0;
+	Scalar default_weight_=1;
 };

@@ -8,9 +8,13 @@ please read my breaking code and leave some comment or point problems out as an 
 
 ## Dependencies
 - [openFrameworks 0.9.8](https://github.com/openframeworks/openFrameworks/releases/tag/0.9.8)
-- [Eigen stable 3.3.4](http://www.eigen.tuxfamily.org/index.php?title=Main_Page)
+- [armadillo: stable 8.500.0](http://arma.sourceforge.net/)
 
-To build, you have to add a path to Eigen directory (maybe `/usr/local/include/eigen3`) to `Header Search Pathes`.
+### Build
+
+#### macOS
+1. add armadillo include directory path like `/usr/local/Cellar/armadillo/8.500.0/include` to `Header Search Pathes`.
+1. add `libarmadillo.dylib` to `Build Phases -> Link Binary With Libraries`.
 
 ## Current status
 - referencing this [YouTube video](https://www.youtube.com/watch?v=FmpDIaiMIeA)
@@ -20,3 +24,11 @@ To build, you have to add a path to Eigen directory (maybe `/usr/local/include/e
 ## What I'm doing next
 - implement back propagation to use data for training.
 - separate analyzer network and classifier network.
+
+## Citation
+Great thanks to Armadillo  
+```
+Conrad Sanderson and Ryan Curtin. 
+Armadillo: a template-based C++ library for linear algebra. 
+Journal of Open Source Software, Vol. 1, pp. 26, 2016.
+```

@@ -15,6 +15,7 @@
 		5B5181F01DA8C4978D35247A /* Helpers.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ED7A8B83362644B9EFF89B69 /* Helpers.cpp */; };
 		617C668BC73991743F15E495 /* imgui_draw.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9DC0874406E56398167C5EC7 /* imgui_draw.cpp */; };
 		7990A2D062DFDD43F5DB1090 /* EngineVk.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5465C7B73A81D63629900A56 /* EngineVk.cpp */; };
+		81BE09052099CFF800FB42EA /* libarmadillo.8.50.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 81BE09032099CF9900FB42EA /* libarmadillo.8.50.0.dylib */; };
 		874E4B0E661C8C379B88A599 /* EngineOpenGLES.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 722322E258DBF9649FB18F21 /* EngineOpenGLES.cpp */; };
 		960286800975DEDFAAC30210 /* Network.cpp in Sources */ = {isa = PBXBuildFile; fileRef = BD629691EB1A16CE24634EDC /* Network.cpp */; };
 		B5CF77B87C334AEB00C0F83B /* Gui.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 90EE5074C2298CE2B7F7758D /* Gui.cpp */; };
@@ -69,6 +70,7 @@
 		6D234B02C2770E5341C7349B /* imgui.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 30; name = imgui.cpp; path = addons/ofxImGui/libs/imgui/src/imgui.cpp; sourceTree = SOURCE_ROOT; };
 		722322E258DBF9649FB18F21 /* EngineOpenGLES.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 30; name = EngineOpenGLES.cpp; path = addons/ofxImGui/src/EngineOpenGLES.cpp; sourceTree = SOURCE_ROOT; };
 		7E3920DA556CF390F6336EC3 /* imgui_internal.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 30; name = imgui_internal.h; path = addons/ofxImGui/libs/imgui/src/imgui_internal.h; sourceTree = SOURCE_ROOT; };
+		81BE09032099CF9900FB42EA /* libarmadillo.8.50.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libarmadillo.8.50.0.dylib; path = ../../../../../../../usr/local/Cellar/armadillo/8.500.0/lib/libarmadillo.8.50.0.dylib; sourceTree = "<group>"; };
 		81F0C0C77B47074D28E52550 /* BaseTheme.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 30; name = BaseTheme.h; path = addons/ofxImGui/src/BaseTheme.h; sourceTree = SOURCE_ROOT; };
 		8A8C4DE1F0216281F81E0F46 /* ofxImGuiLoggerChannel.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 30; name = ofxImGuiLoggerChannel.h; path = addons/ofxImGui/src/ofxImGuiLoggerChannel.h; sourceTree = SOURCE_ROOT; };
 		8C9670EC40D95C296E07D200 /* BaseEngine.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 30; name = BaseEngine.cpp; path = addons/ofxImGui/src/BaseEngine.cpp; sourceTree = SOURCE_ROOT; };
@@ -102,6 +104,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				81BE09052099CFF800FB42EA /* libarmadillo.8.50.0.dylib in Frameworks */,
 				E4328149138ABC9F0047C5CB /* openFrameworksDebug.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -174,6 +177,14 @@
 			name = src;
 			sourceTree = "<group>";
 		};
+		81BE09022099CF9900FB42EA /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				81BE09032099CF9900FB42EA /* libarmadillo.8.50.0.dylib */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		8D2869234BA7562D78D731FF /* imgui */ = {
 			isa = PBXGroup;
 			children = (
@@ -216,6 +227,7 @@
 				BB4B014C10F69532006C3DED /* addons */,
 				6948EE371B920CB800B5AC1A /* local_addons */,
 				E4B69B5B0A3A1756003C02F2 /* MyFirstCNNDebug.app */,
+				81BE09022099CF9900FB42EA /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -454,13 +466,16 @@
 					addons/ofxImGui/libs/imgui,
 					addons/ofxImGui/libs/imgui/src,
 					addons/ofxImGui/src,
-					/usr/local/include/eigen3,
+					/usr/local/Cellar/armadillo/8.500.0/include,
 				);
 				ICON = "$(ICON_NAME_DEBUG)";
 				ICON_FILE = "$(ICON_FILE_PATH)$(ICON)";
 				INFOPLIST_FILE = "openFrameworks-Info.plist";
 				INSTALL_PATH = /Applications;
-				LIBRARY_SEARCH_PATHS = "$(inherited)";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					/usr/local/Cellar/armadillo/8.500.0/lib,
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)Debug";
 				WRAPPER_EXTENSION = app;
 			};
@@ -486,13 +501,16 @@
 					addons/ofxImGui/libs/imgui,
 					addons/ofxImGui/libs/imgui/src,
 					addons/ofxImGui/src,
-					/usr/local/include/eigen3,
+					/usr/local/Cellar/armadillo/8.500.0/include,
 				);
 				ICON = "$(ICON_NAME_RELEASE)";
 				ICON_FILE = "$(ICON_FILE_PATH)$(ICON)";
 				INFOPLIST_FILE = "openFrameworks-Info.plist";
 				INSTALL_PATH = /Applications;
-				LIBRARY_SEARCH_PATHS = "$(inherited)";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					/usr/local/Cellar/armadillo/8.500.0/lib,
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = app;
 				baseConfigurationReference = E4EB6923138AFD0F00A09F29;

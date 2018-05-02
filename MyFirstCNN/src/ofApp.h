@@ -27,8 +27,10 @@ private:
 	void updateClassifier();
 	void updateResult();
 
-	Matrix test_;
-	std::vector<Matrix> classes_;
+	Tensor test_;
+	std::vector<Tensor> classes_;
+	std::vector<std::vector<Tensor>> analyzer_history_;
+	Tensor result_;
 	
 	std::shared_ptr<Network> analyzer_, classifier_;
 	std::shared_ptr<Convolution> convolution_;
@@ -39,16 +41,15 @@ private:
 	enum {
 		DRAW_INPUT,
 		DRAW_FILTER,
-		DRAW_analyzer,
+		DRAW_ANALYZER,
 		DRAW_CLASSIFIER,
 		
 		DRAW_NUM
 	};
 	int draw_mode_=0;
 	int draw_model_index_=0;
-	int draw_filter_index_=0;
-	int draw_analyzer_index_=0;
-	int draw_analyzer_index_sub_=0;
-	int draw_analyzer_index_sub2_=0;
-	int draw_classifier_index_=0;
+	int draw_filter_slice_=0;
+	int draw_analyzer_class_=0;
+	int draw_analyzer_layer_=0;
+	int draw_analyzer_slice_=0;
 };

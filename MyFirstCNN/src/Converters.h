@@ -8,28 +8,28 @@
 
 #pragma once
 
-#include <Eigen/Core>
+#include "Components.h"
 #include "ofPixels.h"
 #include <numeric>
 
-static inline Eigen::MatrixXf convert(const ofPixels &pixels, float min=0, float max=1)
+static inline Matrix convert(const ofPixels &pixels, float min=0, float max=1)
 {
-	Eigen::MatrixXf matrix(pixels.getHeight(), pixels.getWidth());
+	Matrix matrix(pixels.getHeight(), pixels.getWidth());
 	auto *data = pixels.getData();
-	for(int row = 0, n_row = matrix.rows(); row < n_row; ++row) {
-		for(int col = 0, n_col = matrix.cols(); col < n_col; ++col) {
+	for(int row = 0, n_row = matrix.n_rows; row < n_row; ++row) {
+		for(int col = 0, n_col = matrix.n_cols; col < n_col; ++col) {
 			matrix(row,col) = ofMap(data[col+row*n_col], 0, std::numeric_limits<unsigned char>::max(), min, max);
 		}
 	}
 	return matrix;
 }
-static inline ofPixels convert(const Eigen::MatrixXf &matrix, float min=0, float max=1)
+static inline ofPixels convert(const Matrix &matrix, float min=0, float max=1)
 {
 	ofPixels pixels;
-	pixels.allocate(matrix.cols(), matrix.rows(), 1);
+	pixels.allocate(matrix.n_cols, matrix.n_rows, 1);
 	auto *data = pixels.getData();
-	for(int row = 0, n_row = matrix.rows(); row < n_row; ++row) {
-		for(int col = 0, n_col = matrix.cols(); col < n_col; ++col) {
+	for(int row = 0, n_row = matrix.n_rows; row < n_row; ++row) {
+		for(int col = 0, n_col = matrix.n_cols; col < n_col; ++col) {
 			data[col+row*n_col] = ofMap(matrix(row,col), min, max, 0, std::numeric_limits<unsigned char>::max());
 		}
 	}

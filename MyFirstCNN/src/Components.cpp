@@ -9,57 +9,59 @@
 #include "Components.h"
 #include "ofLog.h"
 
-MatrixArray Duplicate::proc(const Matrix &m, int index)
+Tensor Duplicate::proc(const Tensor &t)
 {
-	MatrixArray ret;
-	ret.insert(std::end(ret), size_, m);
+	Index src_slices = t.n_slices;
+	Tensor ret(t.n_rows, t.n_cols, src_slices*size_);
+	for(Index repeat = 0; repeat < size_; ++repeat) {
+		for(Index slice = 0; slice < src_slices; ++slice) {
+			ret.slice(repeat*src_slices+slice) = t.slice(slice);
+		}
+	}
 	return ret;
 }
 
-MatrixArray Combine::proc(const MatrixArray &ma)
+Tensor Combine::proc(const Tensor &t)
 {
-	if(ma.empty()) { return {}; }
-	int rows = ma.size();
-	int cols = ma[0].size();
-	Matrix ret(rows, cols);
-	for(int row = 0; row < rows; ++row) {
-		memcpy(ret.row(row).data(), ma[row].data(), cols*sizeof(Matrix::Scalar));
-	}
-	return {ret};
+	if(t.empty()) { return {}; }
+	Tensor ret = t;
+	ret.reshape(1, t.size(), 1);
+	return ret;
 }
 
 Convolution::Convolution()
 {
-	filter_.resize(3);
-	filter_[0].resize(3,3);
-	filter_[0] <<
-	 1,-1,-1,
-	-1, 1,-1,
-	-1,-1, 1;
-	filter_[1].resize(3,3);
-	filter_[1] <<
-	 1,-1, 1,
-	-1, 1,-1,
-	 1,-1, 1;
-	filter_[2].resize(3,3);
-	filter_[2] <<
-	-1,-1, 1,
-	-1, 1,-1,
-	 1,-1,-1;
+	filter_.resize(3,3,3);
+	filter_.slice(0) = {
+		{ 1,-1,-1},
+		{-1, 1,-1},
+		{-1,-1, 1}
+	};
+	filter_.slice(1) = {
+		{ 1,-1, 1},
+		{-1, 1,-1},
+		{ 1,-1, 1}
+	};
+	filter_.slice(2) = {
+		{-1,-1, 1},
+		{-1, 1,-1},
+		{ 1,-1,-1}
+	};
 }
 
-MatrixArray Convolution::proc(const Matrix &m, int index)
+Tensor Convolution::proc(const Tensor &t)
 {
-	auto &filter = filter_[index%filter_.size()];
-	std::size_t rows = m.rows() - filter.rows() + 1;
-	std::size_t cols = m.cols() - filter.cols() + 1;
-	Matrix ret(rows, cols);
-	for(int row = 0; row < rows; ++row) {
-		for(int col = 0; col < cols; ++col) {
-			ret(row, col) = (m.block(row, col, filter.rows(), filter.cols()).array()*filter.array()).sum()/(float)filter.size();
-		}
+	assert(t.n_slices == filter_.n_slices);
+	
+	arma::SizeCube sub_size(filter_.n_rows-1, filter_.n_cols-1, 0);
+	arma::SizeCube ret_size = arma::size(t)-sub_size;
+	arma::SizeCube full_size = arma::size(t)+sub_size;
+	Tensor ret(full_size);
+	for(Index i = 0; i < ret.n_slices; ++i) {
+		Matrix &filter = filter_.slice(i%filter_.n_slices);
+		ret.slice(i) = arma::conv2(t.slice(i), filter)/(float)filter.size();
 	}
-	return {ret};
+	return ret.tube(sub_size[0], sub_size[1], arma::size(ret_size[0], ret_size[1]));
 }
 
 Pooling::Pooling()
@@ -67,70 +69,54 @@ Pooling::Pooling()
 	size_[0] = size_[1] = 2;
 	stride_[0] = stride_[1] = 2;
 }
-MatrixArray Pooling::proc(const Matrix &m, int index)
+Tensor Pooling::proc(const Tensor &t)
 {
-	std::size_t rows = ceil(m.rows()/(float)stride_[1]);
-	std::size_t cols = ceil(m.cols()/(float)stride_[0]);
-	Matrix ret(rows, cols);
-	for(int row = 0; row < rows; ++row) {
-		for(int col = 0; col < cols; ++col) {
-			int r = row*stride_[1]
-			, c = col*stride_[0]
-			, h = std::min<int>(m.rows()-r, size_[1])
-			, w = std::min<int>(m.cols()-c, size_[0]);
-			ret(row, col) = pool(m.block(r, c, h, w));
+	arma::SizeCube size(ceil(t.n_rows/(float)stride_[1]), ceil(t.n_cols/(float)stride_[0]), t.n_slices);
+	Tensor ret(size);
+	for(Index slice = 0; slice < size.n_slices; ++slice) {
+		for(int row = 0; row < size.n_rows; ++row) {
+			for(int col = 0; col < size.n_cols; ++col) {
+				int r = row*stride_[1]
+				, c = col*stride_[0]
+				, h = std::min<int>(t.n_rows-r, size_[1])
+				, w = std::min<int>(t.n_cols-c, size_[0]);
+				ret(row, col, slice) = pool(t.slice(slice).submat(r, c, arma::size(h, w)));
+			}
 		}
 	}
-	return {ret};
+	return ret;
 }
 
-Matrix::Scalar MaxPooling::pool(const Matrix &m)
+Scalar MaxPooling::pool(const Matrix &m)
 {
-	return m.maxCoeff();
+	return m.max();
 }
 
-MatrixArray Activation::proc(const Matrix &m, int index)
+Tensor Activation::proc(const Tensor &t)
 {
-	std::size_t rows = m.rows();
-	std::size_t cols = m.cols();
-	Matrix ret(rows, cols);
-	for(int row = 0; row < rows; ++row) {
-		for(int col = 0; col < cols; ++col) {
-			ret(row, col) = activate(m(row, col));
-		}
+	Tensor ret = t;
+	return ret.transform([this](const Scalar &s){return activate(s);});
+}
+Scalar ReLU::activate(const Scalar &s)
+{
+	return fmaxf(s, 0);
+}
+
+Tensor Dense::proc(const Tensor &t)
+{
+	if(t.n_cols != weight_.n_rows) {
+		setNumInOut(t.n_cols, weight_.n_cols);
 	}
-	return {ret};
-}
-Matrix::Scalar ReLU::activate(Matrix::Scalar input)
-{
-	return fmaxf(input, 0);
-}
-
-MatrixArray Dense::proc(const Matrix &m, int index)
-{
-	auto src = m;
-	src.conservativeResize(1, src.size());
-	if(src.cols() != weight_.rows()) {
-		setNumInOut(src.cols(), weight_.cols());
+	Tensor ret(1, weight_.n_cols, 1);
+	for(Index slice = 0; slice < t.n_slices; ++slice) {
+		ret.slice(slice) = t.slice(slice)*weight_+bias_;
 	}
-	Matrix ret;
-	ret = (src*weight_).array()+bias_;
-	return {ret};
+	return ret;
 }
 
-void Dense::setNumInOut(int num_in, int num_out)
+void Dense::setNumInOut(Index num_in, Index num_out)
 {
 	weight_.resize(num_in, num_out);
-	weight_.setConstant(default_weight_);
+	weight_.fill(default_weight_);
 }
 
-void Dense::setWeightForOutNode(int index, const Matrix &weight)
-{
-	if(weight_.cols() <= index) {
-		ofLogError() << "index out of bounds. call setNumInOut first.";
-		return;
-	}
-	Matrix w(weight.size(), 1);
-	memcpy(w.data(), weight.data(), weight.size()*sizeof(Matrix::Scalar));
-	weight_.col(index) = w;
-}

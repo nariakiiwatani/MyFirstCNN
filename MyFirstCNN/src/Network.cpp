@@ -26,26 +26,15 @@ bool Network::addLayer(const std::string &name)
 	return false;
 }
 
-MatrixArray Network::proc(const Matrix &m, int index)
+Tensor Network::proc(const Tensor &t)
 {
-	if(result_of_each_layer_.size() <= index) {
-		result_of_each_layer_.resize(index+1);
-	}
-	auto &result = result_of_each_layer_[index];
-	result.resize(getNumLayers());
-	MatrixArray current = {m};
-	const auto *ptr = &current;
-	int num = layers_order_.size();
+	std::size_t num = layers_order_.size();
+	history_.resize(num);
+	const auto *ptr = &t;
 	for(int i = 0; i < num; ++i) {
-		result[i] = layers_[layers_order_[i]]->proc(*ptr);
-		ptr = &result[i];
+		history_[i] = layers_[layers_order_[i]]->proc(*ptr);
+		ptr = &history_[i];
 	}
 	return *ptr;
-}
-
-const MatrixArray& Network::getResult(int index, int index_layer) const
-{
-	if(index_layer < 0) { return result_of_each_layer_[index].back(); }
-	return result_of_each_layer_[index][index_layer];
 }
 
