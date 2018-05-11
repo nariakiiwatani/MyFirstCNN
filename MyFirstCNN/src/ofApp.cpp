@@ -55,23 +55,16 @@ void ofApp::setup(){
 	
 	classifier_ = std::make_shared<Network>();
 	
-	convolution_ = classifier_->createLayer<Convolution>("convolution");
-	auto pooling = classifier_->createLayer<MaxPooling>("pooling");
+	classifier_->addLayer<Duplicate>()->size_ = 3;
+	convolution_ = classifier_->addLayer<Convolution>();
+	auto pooling = classifier_->addLayer<MaxPooling>();
 	pooling->size_[0] = pooling->size_[1] = 4;
 	pooling->stride_[0] = pooling->stride_[1] = 4;
-	classifier_->createLayer<ReLU>("ReLU");
-	classifier_->createLayer<Duplicate>("duplicate")->size_ = 3;
-	classifier_->createLayer<Combine>("combine");
-	dense_ = classifier_->createLayer<Dense>("dense");
+	classifier_->addLayer<ReLU>();
+	classifier_->addLayer<Combine>();
+	dense_ = classifier_->addLayer<Dense>();
 	dense_->setNumInOut(12, 2);
-	
-	classifier_->addLayer("duplicate");
-	classifier_->addLayer("convolution");
-	classifier_->addLayer("pooling");
-	classifier_->addLayer("ReLU");
-	classifier_->addLayer("combine");
-	classifier_->addLayer("dense");
-	classifier_->addLayer("ReLU");
+	classifier_->addLayer<ReLU>();
 	
 	trainer_ = std::make_shared<Trainer>();
 	

@@ -10,29 +10,18 @@
 #include "imgui.h"
 #include "ofUtils.h"
 
-bool Network::addLayer(const std::string &name, std::shared_ptr<Layer> layer)
+void Network::addLayer(std::shared_ptr<Layer> layer)
 {
-	auto result = layers_.insert(std::make_pair(name, layer));
-	return !result.second || addLayer(name);
-}
-
-bool Network::addLayer(const std::string &name)
-{
-	auto it = layers_.find(name);
-	if(it != end(layers_) ) {	
-		layers_order_.push_back(name);
-		return true;
-	}
-	return false;
+	layers_.push_back(layer);
 }
 
 Tensor Network::forward(const Tensor &t)
 {
-	std::size_t num = layers_order_.size();
+	std::size_t num = layers_.size();
 	history_.resize(num);
 	const auto *ptr = &t;
 	for(int i = 0; i < num; ++i) {
-		history_[i] = layers_[layers_order_[i]]->proc(*ptr);
+		history_[i] = layers_[i]->proc(*ptr);
 		ptr = &history_[i];
 	}
 	return *ptr;
@@ -40,10 +29,10 @@ Tensor Network::forward(const Tensor &t)
 
 Tensor Network::backward(const Tensor &t, float learning_rate)
 {
-	std::size_t num = layers_order_.size();
+	std::size_t num = layers_.size();
 	Tensor propagation = t;
 	for(int i = num; --i >= 0;) {
-		propagation = layers_[layers_order_[i]]->backward(propagation, learning_rate);
+		propagation = layers_[i]->backward(propagation, learning_rate);
 	}
 	return propagation;
 }
