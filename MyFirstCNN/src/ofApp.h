@@ -34,7 +34,7 @@ private:
 	
 	std::shared_ptr<Network> classifier_;
 	std::shared_ptr<Convolution> convolution_;
-	std::shared_ptr<Dense> dense_;
+	std::shared_ptr<Dense> dense_[2];
 	
 	std::shared_ptr<Trainer> trainer_;
 	
@@ -53,4 +53,5 @@ private:
 	int draw_analyzer_class_=0;
 	int draw_analyzer_layer_=0;
 	int draw_analyzer_slice_=0;
+	int draw_dense_index_;
 };

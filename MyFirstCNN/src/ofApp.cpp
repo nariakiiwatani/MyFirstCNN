@@ -62,8 +62,11 @@ void ofApp::setup(){
 	pooling->stride_[0] = pooling->stride_[1] = 4;
 	classifier_->addLayer<ReLU>();
 	classifier_->addLayer<Combine>();
-	dense_ = classifier_->addLayer<Dense>();
-	dense_->setNumInOut(12, 2);
+	dense_[0] = classifier_->addLayer<Dense>();
+	dense_[0]->setNumInOut(12, 5);
+	classifier_->addLayer<ReLU>();
+	dense_[1] = classifier_->addLayer<Dense>();
+	dense_[1]->setNumInOut(5, 2);
 	classifier_->addLayer<ReLU>();
 	
 	trainer_ = std::make_shared<Trainer>();
@@ -157,7 +160,8 @@ void ofApp::draw(){
 	}
 	ImGui::End();
 	if(ImGui::Begin("Dense")) {
-		pixelsEditor(dense_->weight_);
+		ImGui::SliderInt("index", &draw_dense_index_, 0, 1);
+		pixelsEditor(dense_[draw_dense_index_]->weight_);
 	}
 	ImGui::End();
 	if(ImGui::Begin("Preview")) {
@@ -196,7 +200,7 @@ void ofApp::train()
 	for(int i = 0, num = classes_.size(); i < num; ++i) {
 		Tensor label = arma::zeros<Tensor>(num,1,1);
 		label[i] = 1;
-		trainer_->train<Pow2>(classifier_, classes_[i], label, 0.05f);
+		trainer_->train<Pow2>(classifier_, classes_[i], label, 0.02f);
 	}
 }
 
