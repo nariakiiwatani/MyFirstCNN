@@ -21,7 +21,7 @@ Tensor Duplicate::forward(const Tensor &t)
 	return ret;
 }
 
-Tensor Combine::forward(const Tensor &t)
+Tensor Flatten::forward(const Tensor &t)
 {
 	if(t.empty()) { return {}; }
 	Tensor ret = t;

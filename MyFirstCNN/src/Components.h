@@ -39,7 +39,7 @@ public:
 	Index size_=1;
 };
 
-class Combine : public Layer
+class Flatten : public Layer
 {
 public:
 	Tensor forward(const Tensor &t);

@@ -61,7 +61,7 @@ void ofApp::setup(){
 	pooling->size_[0] = pooling->size_[1] = 4;
 	pooling->stride_[0] = pooling->stride_[1] = 4;
 	classifier_->addLayer<ReLU>();
-	classifier_->addLayer<Combine>();
+	classifier_->addLayer<Flatten>();
 	dense_[0] = classifier_->addLayer<Dense>();
 	dense_[0]->setNumInOut(12, 5);
 	classifier_->addLayer<ReLU>();
