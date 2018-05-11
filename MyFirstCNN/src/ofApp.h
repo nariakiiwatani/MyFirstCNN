@@ -24,18 +24,19 @@ public:
 	void dragEvent(ofDragInfo dragInfo);
 	void gotMessage(ofMessage msg);
 private:
-	void updateClassifier();
 	void updateResult();
+	void train();
 
 	Tensor test_;
 	std::vector<Tensor> classes_;
 	std::vector<std::vector<Tensor>> analyzer_history_;
 	Tensor result_;
 	
-	std::shared_ptr<Network> analyzer_, classifier_;
+	std::shared_ptr<Network> classifier_;
 	std::shared_ptr<Convolution> convolution_;
-	std::shared_ptr<Pooling> pooling_;
 	std::shared_ptr<Dense> dense_;
+	
+	std::shared_ptr<Trainer> trainer_;
 	
 	ofxImGui::Gui gui_;
 	enum {

@@ -53,38 +53,31 @@ void ofApp::setup(){
 		classes_.push_back(m);
 	}
 	
-	analyzer_ = std::make_shared<Network>();
 	classifier_ = std::make_shared<Network>();
 	
-	gui_.setup();
-	convolution_ = analyzer_->createLayer<Convolution>("convolution");
-	pooling_ = analyzer_->createLayer<MaxPooling>("pooling");
-	pooling_->size_[0] = pooling_->size_[1] = 4;
-	pooling_->stride_[0] = pooling_->stride_[1] = 4;
-	analyzer_->createLayer<ReLU>("ReLU");
-	analyzer_->createLayer<Duplicate>("duplicate")->size_ = 3;
-	analyzer_->createLayer<Combine>("combine");
-	
-	// network for analyzing image.
-	// for now these are just for matching the results with values in reference movie(12:50)
-	// https://www.youtube.com/watch?v=FmpDIaiMIeA
-	// for actual useing, I guess they should be more well-designed.
-	analyzer_->addLayer("duplicate");
-	analyzer_->addLayer("convolution");
-	analyzer_->addLayer("pooling");
-	analyzer_->addLayer("ReLU");
-	analyzer_->addLayer("combine");
-	
-	// network for classification.
-	// need to be more organized...
-	classifier_->addLayer("analyzer", analyzer_);
+	convolution_ = classifier_->createLayer<Convolution>("convolution");
+	auto pooling = classifier_->createLayer<MaxPooling>("pooling");
+	pooling->size_[0] = pooling->size_[1] = 4;
+	pooling->stride_[0] = pooling->stride_[1] = 4;
+	classifier_->createLayer<ReLU>("ReLU");
+	classifier_->createLayer<Duplicate>("duplicate")->size_ = 3;
+	classifier_->createLayer<Combine>("combine");
 	dense_ = classifier_->createLayer<Dense>("dense");
 	dense_->setNumInOut(12, 2);
-	classifier_->createLayer<ReLU>("ReLU");
+	
+	classifier_->addLayer("duplicate");
+	classifier_->addLayer("convolution");
+	classifier_->addLayer("pooling");
+	classifier_->addLayer("ReLU");
+	classifier_->addLayer("combine");
 	classifier_->addLayer("dense");
 	classifier_->addLayer("ReLU");
 	
-	updateClassifier();
+	trainer_ = std::make_shared<Trainer>();
+	
+	updateResult();
+	
+	gui_.setup();
 }
 
 //--------------------------------------------------------------
@@ -153,7 +146,7 @@ void ofApp::draw(){
 		for(auto &c : classes_) {
 			if(ImGui::TreeNode(&c, "%s", "supervisor")) {
 				if(pixelsEditor(c.slice(0))) {
-					updateClassifier();
+					updateResult();
 				}
 				ImGui::TreePop();
 			}
@@ -161,30 +154,13 @@ void ofApp::draw(){
 	}
 	ImGui::End();
 	if(ImGui::Begin("Convolution filters")) {
-		
 		convolution_->filter_.each_slice([this,&pixelsEditor](Matrix &m) {
 			ImGui::PushID(&m);
 			if(pixelsEditor(m)) {
-				updateClassifier();
+				updateResult();
 			}
 			ImGui::PopID();
 		});
-	}
-	ImGui::End();
-	if(ImGui::Begin("Pooling size")) {
-		int size[2] = {(int)pooling_->size_[0], (int)pooling_->size_[1]};
-		int stride[2] = {(int)pooling_->stride_[0], (int)pooling_->stride_[1]};
-
-		if(ImGui::SliderInt2("size", size, 1, 8)) {
-			pooling_->size_[0] = size[0];
-			pooling_->size_[1] = size[1];
-			updateClassifier();
-		}
-		if(ImGui::SliderInt2("stride", stride, 1, 8)) {
-			pooling_->stride_[0] = stride[0];
-			pooling_->stride_[1] = stride[1];
-			updateClassifier();
-		}
 	}
 	ImGui::End();
 	if(ImGui::Begin("Dense")) {
@@ -212,24 +188,34 @@ void ofApp::draw(){
 	gui_.end();
 }
 
-void ofApp::updateClassifier()
+void ofApp::updateResult()
 {
 	analyzer_history_.resize(classes_.size());
 	for(int i = 0, num = classes_.size(); i < num; ++i) {
-		dense_->weight_.col(i) = analyzer_->proc(classes_[i]).slice(0).t();
-		analyzer_history_[i] = analyzer_->getHistory();
+		classifier_->proc(classes_[i]).slice(0).t();
+		analyzer_history_[i] = classifier_->getHistory();
 	}
-	updateResult();
-}
-
-void ofApp::updateResult()
-{
 	result_ = classifier_->proc(test_);
 }
 
+void ofApp::train()
+{
+	for(int i = 0, num = classes_.size(); i < num; ++i) {
+		Tensor label = arma::zeros<Tensor>(num,1,1);
+		label[i] = 1;
+		trainer_->train<Pow2>(classifier_, classes_[i], label, 0.05f);
+	}
+}
+
+
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key){
-
+	switch(key) {
+		case OF_KEY_RETURN:
+			train();
+			updateResult();
+			break;
+	}
 }
 
 //--------------------------------------------------------------

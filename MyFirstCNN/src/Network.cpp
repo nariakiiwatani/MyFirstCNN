@@ -26,7 +26,7 @@ bool Network::addLayer(const std::string &name)
 	return false;
 }
 
-Tensor Network::proc(const Tensor &t)
+Tensor Network::forward(const Tensor &t)
 {
 	std::size_t num = layers_order_.size();
 	history_.resize(num);
@@ -36,5 +36,15 @@ Tensor Network::proc(const Tensor &t)
 		ptr = &history_[i];
 	}
 	return *ptr;
+}
+
+Tensor Network::backward(const Tensor &t, float learning_rate)
+{
+	std::size_t num = layers_order_.size();
+	Tensor propagation = t;
+	for(int i = num; --i >= 0;) {
+		propagation = layers_[layers_order_[i]]->backward(propagation, learning_rate);
+	}
+	return propagation;
 }
 

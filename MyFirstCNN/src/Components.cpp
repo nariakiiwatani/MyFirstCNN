@@ -9,7 +9,7 @@
 #include "Components.h"
 #include "ofLog.h"
 
-Tensor Duplicate::proc(const Tensor &t)
+Tensor Duplicate::forward(const Tensor &t)
 {
 	Index src_slices = t.n_slices;
 	Tensor ret(t.n_rows, t.n_cols, src_slices*size_);
@@ -21,11 +21,11 @@ Tensor Duplicate::proc(const Tensor &t)
 	return ret;
 }
 
-Tensor Combine::proc(const Tensor &t)
+Tensor Combine::forward(const Tensor &t)
 {
 	if(t.empty()) { return {}; }
 	Tensor ret = t;
-	ret.reshape(1, t.size(), 1);
+	ret.reshape(t.size(), 1, 1);
 	return ret;
 }
 
@@ -49,7 +49,7 @@ Convolution::Convolution()
 	};
 }
 
-Tensor Convolution::proc(const Tensor &t)
+Tensor Convolution::forward(const Tensor &t)
 {
 	assert(t.n_slices == filter_.n_slices);
 	
@@ -69,7 +69,7 @@ Pooling::Pooling()
 	size_[0] = size_[1] = 2;
 	stride_[0] = stride_[1] = 2;
 }
-Tensor Pooling::proc(const Tensor &t)
+Tensor Pooling::forward(const Tensor &t)
 {
 	arma::SizeCube size(ceil(t.n_rows/(float)stride_[1]), ceil(t.n_cols/(float)stride_[0]), t.n_slices);
 	Tensor ret(size);
@@ -92,7 +92,7 @@ Scalar MaxPooling::pool(const Matrix &m)
 	return m.max();
 }
 
-Tensor Activation::proc(const Tensor &t)
+Tensor Activation::forward(const Tensor &t)
 {
 	Tensor ret = t;
 	return ret.transform([this](const Scalar &s){return activate(s);});
@@ -102,21 +102,74 @@ Scalar ReLU::activate(const Scalar &s)
 	return fmaxf(s, 0);
 }
 
-Tensor Dense::proc(const Tensor &t)
+Tensor MLPLayer::forward(const Tensor &t)
 {
-	if(t.n_cols != weight_.n_rows) {
-		setNumInOut(t.n_cols, weight_.n_cols);
+	if(t.empty()) { return {}; }
+	Tensor ret(num_out_, 1, 1);
+	ret.slice(0).col(0) = forward(t.slice(0).col(0));
+	return Tensor(ret);
+}
+
+Tensor MLPLayer::backward(const Tensor &t, float learning_rate)
+{
+	if(t.empty()) { return t; }
+	Tensor ret(num_in_, 1, 1);
+	ret.slice(0).col(0) = backward(t.slice(0).col(0), learning_rate);
+	return Tensor(ret);
+}
+
+Vector Dense::forward(const Vector &v)
+{
+	if(v.size() != weight_.n_cols) {
+		setNumInOut(v.size(), weight_.n_rows);
 	}
-	Tensor ret(1, weight_.n_cols, 1);
-	for(Index slice = 0; slice < t.n_slices; ++slice) {
-		ret.slice(slice) = t.slice(slice)*weight_+bias_;
-	}
-	return ret;
+	return weight_*v+bias_;
 }
 
 void Dense::setNumInOut(Index num_in, Index num_out)
 {
-	weight_.resize(num_in, num_out);
-	weight_.fill(default_weight_);
+	MLPLayer::setNumInOut(num_in, num_out);
+	weight_ = arma::randn<Matrix>(num_out, num_in);
+	bias_ = arma::randn<Vector>(num_out);
 }
 
+Vector Dense::backward(const Vector &v, float learning_rate)
+{
+	assert(v.size() == weight_.n_rows);
+	Vector input = input_cache_.slice(0).col(0);
+	Vector db = -learning_rate * v;
+	Matrix dw = db*input.t();
+	Vector ret = weight_.t()*v;
+	weight_ += dw;
+	bias_ += db;
+	return ret;
+}
+
+Tensor ErrorFunction::error(const Tensor &input, const Tensor &label)
+{
+	assert(arma::size(input) == arma::size(label));
+	Tensor ret(arma::size(input));
+	for(Index i = 0, num = ret.size(); i < num; ++i) {
+		ret[i] = getError(input[i], label[i]);
+	}
+	return ret;
+}
+Tensor ErrorFunction::gradient(const Tensor &input, const Tensor &label)
+{
+	assert(arma::size(input) == arma::size(label));
+	Tensor ret(arma::size(input));
+	for(Index i = 0, num = ret.size(); i < num; ++i) {
+		ret[i] = getGradient(input[i], label[i]);
+	}
+	return ret;
+}
+
+Scalar Pow2::getError(const Scalar &input, const Scalar &label)
+{
+	return pow(input-label, 2)/2.f;
+}
+
+Scalar Pow2::getGradient(const Scalar &input, const Scalar &label)
+{
+	return input-label;
+}

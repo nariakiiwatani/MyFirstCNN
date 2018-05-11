@@ -17,13 +17,13 @@ please read my breaking code and leave some comment or point problems out as an 
 1. add `libarmadillo.dylib` to `Build Phases -> Link Binary With Libraries`.
 
 ## Current status
-- referencing this [YouTube video](https://www.youtube.com/watch?v=FmpDIaiMIeA)
-- minimum system of CNN classification
-- no learning
+- back propagation for dense layer is working, maybe.
 
 ## What I'm doing next
-- implement back propagation to use data for training.
-- separate analyzer network and classifier network.
+- implement other common layers
+	- Softmax
+	- Sigmoid
+- implement back propagations for every layer
 
 ## Citation
 Great thanks to Armadillo  
