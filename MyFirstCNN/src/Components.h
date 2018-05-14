@@ -43,6 +43,7 @@ class Flatten : public Layer
 {
 public:
 	Tensor forward(const Tensor &t);
+	Tensor backward(const Tensor &t, float learning_rate);
 };
 
 class Convolution : public Layer
@@ -50,6 +51,7 @@ class Convolution : public Layer
 public:
 	Convolution();
 	Tensor forward(const Tensor &t);
+	Tensor backward(const Tensor &t, float learning_rate);
 public:
 	Tensor filter_;
 	Index padding_=0;
@@ -67,6 +69,8 @@ public:
 
 class MaxPooling : public Pooling
 {
+public:
+	Tensor backward(const Tensor &t, float learning_rate);
 protected:
 	Scalar pool(const Matrix &m);
 };

@@ -29,24 +29,14 @@ Tensor Flatten::forward(const Tensor &t)
 	return ret;
 }
 
+Tensor Flatten::backward(const Tensor &t, float learning_rate)
+{
+	return arma::reshape(t, arma::size(input_cache_));
+}
+
 Convolution::Convolution()
 {
-	filter_.resize(3,3,3);
-	filter_.slice(0) = {
-		{ 1,-1,-1},
-		{-1, 1,-1},
-		{-1,-1, 1}
-	};
-	filter_.slice(1) = {
-		{ 1,-1, 1},
-		{-1, 1,-1},
-		{ 1,-1, 1}
-	};
-	filter_.slice(2) = {
-		{-1,-1, 1},
-		{-1, 1,-1},
-		{ 1,-1,-1}
-	};
+	filter_ = arma::randn<Tensor>(3,3,3);
 }
 
 Tensor Convolution::forward(const Tensor &t)
@@ -62,6 +52,29 @@ Tensor Convolution::forward(const Tensor &t)
 		ret.slice(i) = arma::conv2(t.slice(i), filter)/(float)filter.size();
 	}
 	return ret.tube(sub_size[0], sub_size[1], arma::size(ret_size[0], ret_size[1]));
+}
+
+Tensor Convolution::backward(const Tensor &t, float learning_rate)
+{
+	assert(t.n_slices == filter_.n_slices);
+	
+	arma::SizeCube inc_size(filter_.n_rows-1, filter_.n_cols-1, 0);
+	arma::SizeCube ret_size = arma::size(t)+inc_size;
+	Tensor ret(ret_size);
+	Tensor dw = arma::zeros<Tensor>(arma::size(filter_));
+	for(Index i = 0; i < ret.n_slices; ++i) {
+		Matrix &filter = filter_.slice(i%filter_.n_slices);
+		auto &tt = t.slice(i);
+		ret.slice(i) = arma::conv2(tt, filter)/(float)filter.size();
+		for(Index c = 0; c < tt.n_cols; ++c) {
+			for(Index r = 0; r < tt.n_rows; ++r) {
+				dw.slice(i) += input_cache_.slice(i).submat(r,c,arma::size(filter))*tt(r,c);
+			}
+		}
+		dw.slice(i) /= (float)tt.size();
+	}
+	filter_ += -learning_rate*dw;
+	return ret;
 }
 
 Pooling::Pooling()
@@ -85,6 +98,26 @@ Tensor Pooling::forward(const Tensor &t)
 		}
 	}
 	return ret;
+}
+
+Tensor MaxPooling::backward(const Tensor &t, float /*learning_rate*/)
+{
+	Tensor ret = arma::zeros<Tensor>(arma::size(input_cache_));
+	arma::SizeCube size(ceil(t.n_rows/(float)stride_[1]), ceil(t.n_cols/(float)stride_[0]), t.n_slices);
+	for(Index slice = 0; slice < size.n_slices; ++slice) {
+		for(int row = 0; row < size.n_rows; ++row) {
+			for(int col = 0; col < size.n_cols; ++col) {
+				int r = row*stride_[1]
+				, c = col*stride_[0]
+				, h = std::min<int>(t.n_rows-r, size_[1])
+				, w = std::min<int>(t.n_cols-c, size_[0]);
+				auto &mat = t.slice(slice).submat(r, c, arma::size(h, w));
+				auto sub = arma::ind2sub(arma::size(mat), mat.index_max());
+				ret(row+sub.n_rows, col+sub.n_cols, slice) = 1;
+			}
+		}
+	}
+	return ret % input_cache_;
 }
 
 Scalar MaxPooling::pool(const Matrix &m)
