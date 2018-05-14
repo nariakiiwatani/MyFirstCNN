@@ -17,13 +17,12 @@ please read my breaking code and leave some comment or point problems out as an 
 1. add `libarmadillo.dylib` to `Build Phases -> Link Binary With Libraries`.
 
 ## Current status
-- back propagation for dense layer is working, maybe.
+- back propagation for every existing layer is working, maybe.
 
 ## What I'm doing next
 - implement other common layers
 	- Softmax
 	- Sigmoid
-- implement back propagations for every layer
 
 ## Citation
 Great thanks to Armadillo  

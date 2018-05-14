@@ -71,7 +71,6 @@ Tensor Convolution::backward(const Tensor &t, float learning_rate)
 				dw.slice(i) += input_cache_.slice(i).submat(r,c,arma::size(filter))*tt(r,c);
 			}
 		}
-		dw.slice(i) /= (float)tt.size();
 	}
 	filter_ += -learning_rate*dw;
 	return ret;
@@ -130,6 +129,12 @@ Tensor Activation::forward(const Tensor &t)
 	Tensor ret = t;
 	return ret.transform([this](const Scalar &s){return activate(s);});
 }
+
+Tensor ReLU::backward(const Tensor &t, float /*learning_rate*/)
+{
+	return arma::clamp(arma::sign(input_cache_), 0, 1) % t;
+}
+
 Scalar ReLU::activate(const Scalar &s)
 {
 	return fmaxf(s, 0);

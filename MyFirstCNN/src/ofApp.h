@@ -54,4 +54,6 @@ private:
 	int draw_analyzer_layer_=0;
 	int draw_analyzer_slice_=0;
 	int draw_dense_index_;
+	
+	void reset();
 };

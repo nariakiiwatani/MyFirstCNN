@@ -85,6 +85,8 @@ protected:
 
 class ReLU : public Activation
 {
+public:
+	Tensor backward(const Tensor &t, float learning_rate);
 protected:
 	Scalar activate(const Scalar &s);
 };
