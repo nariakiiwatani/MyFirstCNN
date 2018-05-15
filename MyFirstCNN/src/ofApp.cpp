@@ -184,7 +184,7 @@ void ofApp::train()
 	for(int i = 0, num = classes_.size(); i < num; ++i) {
 		Tensor label = arma::zeros<Tensor>(num,1,1);
 		label[i] = 1;
-		trainer_->train<Pow2>(classifier_, classes_[i], label, 0.03f);
+		trainer_->train<SoftmaxCrossEntropy>(classifier_, classes_[i], label, 0.3f);
 	}
 }
 
@@ -194,9 +194,11 @@ void ofApp::reset()
 	
 	classifier_->addLayer<Duplicate>()->size_ = 3;
 	convolution_ = classifier_->addLayer<Convolution>();
+	classifier_->addLayer<ReLU>();
+	classifier_->addLayer<Convolution>();
 	auto pooling = classifier_->addLayer<MaxPooling>();
-	pooling->size_[0] = pooling->size_[1] = 4;
-	pooling->stride_[0] = pooling->stride_[1] = 4;
+	pooling->size_[0] = pooling->size_[1] = 3;
+	pooling->stride_[0] = pooling->stride_[1] = 3;
 	classifier_->addLayer<ReLU>();
 	classifier_->addLayer<Flatten>();
 	dense_[0] = classifier_->addLayer<Dense>();
@@ -204,14 +206,16 @@ void ofApp::reset()
 	classifier_->addLayer<ReLU>();
 	dense_[1] = classifier_->addLayer<Dense>();
 	dense_[1]->setNumInOut(5, 2);
-	classifier_->addLayer<ReLU>();
+//	classifier_->addLayer<ReLU>();
 }
 
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key){
 	switch(key) {
 		case OF_KEY_RETURN:
-			train();
+			for(int i = 0; i < 100; ++i) {
+				train();
+			}
 			updateResult();
 			break;
 		case 'r':

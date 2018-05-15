@@ -49,7 +49,7 @@ Tensor Convolution::forward(const Tensor &t)
 	Tensor ret(full_size);
 	for(Index i = 0; i < ret.n_slices; ++i) {
 		Matrix &filter = filter_.slice(i%filter_.n_slices);
-		ret.slice(i) = arma::conv2(t.slice(i), filter);
+		ret.slice(i) = arma::conv2(t.slice(i), filter) / (float)filter.size();
 	}
 	return ret.tube(sub_size[0], sub_size[1], arma::size(ret_size[0], ret_size[1]));
 }
@@ -65,12 +65,13 @@ Tensor Convolution::backward(const Tensor &t, float learning_rate)
 	for(Index i = 0; i < ret.n_slices; ++i) {
 		Matrix filter_flip = arma::fliplr(arma::flipud(filter_.slice(i%filter_.n_slices)));
 		auto &tt = t.slice(i);
-		ret.slice(i) = arma::conv2(tt, filter_flip);
+		ret.slice(i) = arma::conv2(tt, filter_flip) / (float)filter_flip.size();
 		for(Index c = 0; c < tt.n_cols; ++c) {
 			for(Index r = 0; r < tt.n_rows; ++r) {
 				dw.slice(i) += input_cache_.slice(i).submat(r,c,arma::size(filter_flip))*tt(r,c);
 			}
 		}
+		dw.slice(i) /= (float)tt.size();
 	}
 	filter_ += -learning_rate*dw;
 	return ret;
