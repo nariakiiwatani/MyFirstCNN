@@ -49,7 +49,7 @@ Tensor Convolution::forward(const Tensor &t)
 	Tensor ret(full_size);
 	for(Index i = 0; i < ret.n_slices; ++i) {
 		Matrix &filter = filter_.slice(i%filter_.n_slices);
-		ret.slice(i) = arma::conv2(t.slice(i), filter)/(float)filter.size();
+		ret.slice(i) = arma::conv2(t.slice(i), filter);
 	}
 	return ret.tube(sub_size[0], sub_size[1], arma::size(ret_size[0], ret_size[1]));
 }
@@ -63,12 +63,12 @@ Tensor Convolution::backward(const Tensor &t, float learning_rate)
 	Tensor ret(ret_size);
 	Tensor dw = arma::zeros<Tensor>(arma::size(filter_));
 	for(Index i = 0; i < ret.n_slices; ++i) {
-		Matrix &filter = filter_.slice(i%filter_.n_slices);
+		Matrix filter_flip = arma::fliplr(arma::flipud(filter_.slice(i%filter_.n_slices)));
 		auto &tt = t.slice(i);
-		ret.slice(i) = arma::conv2(tt, filter)/(float)filter.size();
+		ret.slice(i) = arma::conv2(tt, filter_flip);
 		for(Index c = 0; c < tt.n_cols; ++c) {
 			for(Index r = 0; r < tt.n_rows; ++r) {
-				dw.slice(i) += input_cache_.slice(i).submat(r,c,arma::size(filter))*tt(r,c);
+				dw.slice(i) += input_cache_.slice(i).submat(r,c,arma::size(filter_flip))*tt(r,c);
 			}
 		}
 	}
@@ -112,7 +112,7 @@ Tensor MaxPooling::backward(const Tensor &t, float /*learning_rate*/)
 				, w = std::min<int>(t.n_cols-c, size_[0]);
 				auto &mat = t.slice(slice).submat(r, c, arma::size(h, w));
 				auto sub = arma::ind2sub(arma::size(mat), mat.index_max());
-				ret(row+sub.n_rows, col+sub.n_cols, slice) = 1;
+				ret(r+sub.n_rows, c+sub.n_cols, slice) = 1;
 			}
 		}
 	}
