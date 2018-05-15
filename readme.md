@@ -23,6 +23,7 @@ please read my breaking code and leave some comment or point problems out as an 
 - implement other common layers
 	- Softmax
 	- Sigmoid
+- Test with [MNIST handwritten digits](http://yann.lecun.com/exdb/mnist/)
 
 ## Citation
 Great thanks to Armadillo  
