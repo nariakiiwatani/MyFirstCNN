@@ -120,8 +120,8 @@ class ErrorFunction
 public:
 	Tensor error(const Tensor &input, const Tensor &label);
 	Tensor gradient(const Tensor &input, const Tensor &label);
-	virtual Scalar getError(const Scalar &input, const Scalar &label)=0;
-	virtual Scalar getGradient(const Scalar &input, const Scalar &label)=0;
+	virtual Scalar getError(const Scalar &input, const Scalar &label){return input-label;};
+	virtual Scalar getGradient(const Scalar &input, const Scalar &label){return input-label;};
 };
 
 class Pow2 : public ErrorFunction
@@ -129,4 +129,10 @@ class Pow2 : public ErrorFunction
 public:
 	Scalar getError(const Scalar &input, const Scalar &label);
 	Scalar getGradient(const Scalar &input, const Scalar &label);
+};
+
+class SoftmaxCrossEntropy : public ErrorFunction
+{
+public:
+	Tensor gradient(const Tensor &input, const Tensor &label);
 };

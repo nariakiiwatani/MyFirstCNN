@@ -211,3 +211,12 @@ Scalar Pow2::getGradient(const Scalar &input, const Scalar &label)
 {
 	return input-label;
 }
+
+Tensor SoftmaxCrossEntropy::gradient(const Tensor &input, const Tensor &label)
+{
+	assert(arma::size(input) == arma::size(label));
+	Scalar maximum = input.max();
+	Tensor t = input;
+	t.transform([this,maximum](const Scalar &s){return exp(s-maximum);});
+	return t/arma::accu(t) - label;
+}
