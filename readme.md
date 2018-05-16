@@ -17,13 +17,13 @@ please read my breaking code and leave some comment or point problems out as an 
 1. add `libarmadillo.dylib` to `Build Phases -> Link Binary With Libraries`.
 
 ## Current status
-- back propagation for every existing layer is working, maybe.
+- Tested with [MNIST handwritten digits](http://yann.lecun.com/exdb/mnist/) and gets 20% error. XD
 
 ## What I'm doing next
+- redesign train models by referencing other succeeded models.
 - implement other common layers
 	- Softmax
 	- Sigmoid
-- Test with [MNIST handwritten digits](http://yann.lecun.com/exdb/mnist/)
 
 ## Citation
 Great thanks to Armadillo  
