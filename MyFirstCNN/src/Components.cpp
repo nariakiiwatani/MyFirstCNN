@@ -41,37 +41,38 @@ Convolution::Convolution()
 
 Tensor Convolution::forward(const Tensor &t)
 {
-	assert(t.n_slices == filter_.n_slices);
-	
 	arma::SizeCube sub_size(filter_.n_rows-1, filter_.n_cols-1, 0);
 	arma::SizeCube ret_size = arma::size(t)-sub_size;
 	arma::SizeCube full_size = arma::size(t)+sub_size;
-	Tensor ret(full_size);
-	for(Index i = 0; i < ret.n_slices; ++i) {
-		Matrix &filter = filter_.slice(i%filter_.n_slices);
-		ret.slice(i) = arma::conv2(t.slice(i), filter) / (float)filter.size();
+	Tensor ret(full_size.n_rows, full_size.n_cols, 0);
+	for(Index f = 0; f < filter_.n_slices; ++f) {
+		Matrix &filter = filter_.slice(f);
+		for(Index i = 0; i < t.n_slices; ++i) {
+			auto &tt = t.slice(i);
+			ret.insert_slices(ret.n_slices, 1);
+			ret.slice(ret.n_slices-1) = arma::conv2(tt, filter) / (float)filter.size();
+		}
 	}
 	return ret.tube(sub_size[0], sub_size[1], arma::size(ret_size[0], ret_size[1]));
 }
 
 Tensor Convolution::backward(const Tensor &t, float learning_rate)
 {
-	assert(t.n_slices == filter_.n_slices);
-	
 	arma::SizeCube inc_size(filter_.n_rows-1, filter_.n_cols-1, 0);
 	arma::SizeCube ret_size = arma::size(t)+inc_size;
-	Tensor ret(ret_size);
+	Tensor ret(arma::size(input_cache_));
 	Tensor dw = arma::zeros<Tensor>(arma::size(filter_));
-	for(Index i = 0; i < ret.n_slices; ++i) {
-		Matrix filter_flip = arma::fliplr(arma::flipud(filter_.slice(i%filter_.n_slices)));
+	for(Index i = 0; i < t.n_slices; ++i) {
+		Index f = i%filter_.n_slices;
+		Index dst = i/filter_.n_slices;
+		Matrix filter_flip = arma::fliplr(arma::flipud(filter_.slice(f)));
 		auto &tt = t.slice(i);
-		ret.slice(i) = arma::conv2(tt, filter_flip) / (float)filter_flip.size();
+		ret.slice(dst) += arma::conv2(tt, filter_flip) / (float)filter_flip.size();
 		for(Index c = 0; c < tt.n_cols; ++c) {
 			for(Index r = 0; r < tt.n_rows; ++r) {
-				dw.slice(i) += input_cache_.slice(i).submat(r,c,arma::size(filter_flip))*tt(r,c);
+				dw.slice(f) += input_cache_.slice(dst).submat(r,c,arma::size(filter_flip))*tt(r,c) / (float)tt.size();
 			}
 		}
-		dw.slice(i) /= (float)tt.size();
 	}
 	filter_ += -learning_rate*dw;
 	return ret;
