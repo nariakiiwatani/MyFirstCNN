@@ -5,56 +5,12 @@
 
 //--------------------------------------------------------------
 void ofApp::setup(){
-	{
-		// image to be classified
-		test_.resize(9, 9, 1);
-		test_.slice(0) = {
-			{-1,-1,-1,-1,-1,-1,-1,-1,-1},
-			{-1, 1,-1,-1,-1,-1,-1, 1,-1},
-			{-1,-1, 1,-1,-1,-1, 1,-1,-1},
-			{-1,-1,-1, 1,-1, 1,-1,-1,-1},
-			{-1,-1,-1,-1, 1,-1,-1,-1,-1},
-			{-1,-1,-1, 1,-1, 1,-1,-1,-1},
-			{-1,-1, 1,-1,-1,-1, 1,-1,-1},
-			{-1, 1,-1,-1,-1,-1,-1, 1,-1},
-			{-1,-1,-1,-1,-1,-1,-1,-1,-1}
-		};
-	}
-	{
-		// class 1 (X)
-		Tensor m(9, 9, 1);
-		m.slice(0) = {
-			{-1,-1,-1,-1,-1,-1,-1,-1,-1},
-			{-1, 1,-1,-1,-1,-1,-1, 1,-1},
-			{-1,-1, 1,-1,-1,-1, 1,-1,-1},
-			{-1,-1,-1, 1,-1, 1,-1,-1,-1},
-			{-1,-1,-1,-1, 1,-1,-1,-1,-1},
-			{-1,-1,-1, 1,-1, 1,-1,-1,-1},
-			{-1,-1, 1,-1,-1,-1, 1,-1,-1},
-			{-1, 1,-1,-1,-1,-1,-1, 1,-1},
-			{-1,-1,-1,-1,-1,-1,-1,-1,-1}
-		};
-		classes_.push_back(m);
-	}
-	{
-		// class 2 (O)
-		Tensor m(9, 9, 1);
-		m.slice(0) = {
-			{-1,-1,-1,-1,-1,-1,-1,-1,-1},
-			{-1,-1,-1, 1, 1, 1,-1,-1,-1},
-			{-1,-1, 1,-1,-1,-1, 1,-1,-1},
-			{-1, 1,-1,-1,-1,-1,-1, 1,-1},
-			{-1, 1,-1,-1,-1,-1,-1, 1,-1},
-			{-1, 1,-1,-1,-1,-1,-1, 1,-1},
-			{-1,-1, 1,-1,-1,-1, 1,-1,-1},
-			{-1,-1,-1, 1, 1, 1,-1,-1,-1},
-			{-1,-1,-1,-1,-1,-1,-1,-1,-1}
-		};
-		classes_.push_back(m);
-	}
+	mnist_test_.loadForTest();
+	mnist_train_.loadForTrain();
 	
 	trainer_ = std::make_shared<Trainer>();
 	reset();
+	trainAll();
 	updateResult();
 	
 	gui_.setup();
@@ -69,35 +25,22 @@ void ofApp::update(){
 void ofApp::draw(){
 	
 	Matrix preview;
-	ofVec2f range(0,1);
 	switch(draw_mode_) {
 		case DRAW_INPUT:
-			if(draw_model_index_ == 0) {
-				preview = test_;
-			}
-			else {
-				preview = classes_[draw_model_index_-1];
-			}
-			range.set(-1,1);
-			break;
-		case DRAW_FILTER:
-			preview = convolution_->filter_.slice(draw_filter_slice_);
-			range.set(-1,1);
-			break;
-		case DRAW_ANALYZER:
-			preview = analyzer_history_[draw_analyzer_class_][draw_analyzer_layer_].slice(draw_analyzer_slice_);
-			range.set(0,1);
+			preview = test_image_;
+		case DRAW_HISTORY:
+			preview = analyzer_history_[draw_analyzer_layer_].slice(draw_analyzer_slice_);
 			break;
 		case DRAW_CLASSIFIER:
 			preview = result_.slice(0);
-			range.set(0,1);
 			break;
 	}
+	ofImage(convert(preview, 0, 1)).draw(ofGetCurrentViewport());
+	ofDrawBitmapStringHighlight(ofToString((int)test_label_), 10,30);
+	ofDrawBitmapStringHighlight(ofToString((int)predict_label_), 10,50);
 	
-	ofImage(convert(preview, range[0], range[1])).draw(ofGetCurrentViewport());
-	
+		
 	auto pixelsEditor = [](Matrix &matrix) {
-		arma::inplace_trans(matrix);
 		bool edited = false;
 		int size[2] = {(int)matrix.n_cols, (int)matrix.n_rows};
 		if(ImGui::SliderInt2("size", size, 1, 32)) {
@@ -111,25 +54,22 @@ void ofApp::draw(){
 			edited |= ImGui::DragFloatN("", data, col.size(), 0.01f, -1, 1, "%.2f", 1);
 			ImGui::PopID();
 		});
-		arma::inplace_trans(matrix);
 		return edited;
 	};
 	
 	gui_.begin();
 	if(ImGui::Begin("Input")) {
 		if(ImGui::TreeNode("input image")) {
-			if(pixelsEditor(test_.slice(0))) {
-				updateResult();
-			}
-			ImGui::TreePop();
-		}
-		for(auto &c : classes_) {
-			if(ImGui::TreeNode(&c, "%s", "supervisor")) {
-				if(pixelsEditor(c.slice(0))) {
+			ofPixels image;
+			unsigned char label;
+			if(mnist_test_.getData(draw_mnist_index_, image, label)) {
+				Matrix img_mat = convert(image);
+				ImGui::Text("%d", (int)label);
+				if(pixelsEditor(img_mat)) {
 					updateResult();
 				}
-				ImGui::TreePop();
 			}
+			ImGui::TreePop();
 		}
 	}
 	ImGui::End();
@@ -152,42 +92,86 @@ void ofApp::draw(){
 		ImGui::SliderInt("mode", &draw_mode_, 0, DRAW_NUM-1);
 		switch(draw_mode_) {
 			case DRAW_INPUT:
-				ImGui::SliderInt("index", &draw_model_index_, 0, classes_.size());
+				ImGui::SliderInt("index", &draw_mnist_index_, 0, mnist_test_.size()-1);
 				break;
-			case DRAW_FILTER:
-				ImGui::SliderInt("slice", &draw_filter_slice_, 0, convolution_->filter_.n_slices-1);
-				break;
-			case DRAW_ANALYZER:
-				ImGui::SliderInt("class", &draw_analyzer_class_, 0, analyzer_history_.size()-1);
-				ImGui::SliderInt("layer", &draw_analyzer_layer_, 0, analyzer_history_[draw_analyzer_class_].size()-1);
-				ImGui::SliderInt("slice", &draw_analyzer_slice_, 0, analyzer_history_[draw_analyzer_class_][draw_analyzer_layer_].n_slices-1);
+			case DRAW_HISTORY:
+				ImGui::SliderInt("layer", &draw_analyzer_layer_, 0, analyzer_history_.size()-1);
+				ImGui::SliderInt("slice", &draw_analyzer_slice_, 0, analyzer_history_[draw_analyzer_layer_].n_slices-1);
 				break;
 		}
 		pixelsEditor(preview);
 	}
 	ImGui::End();
+	if(ImGui::Begin("Result")) {
+		pixelsEditor(result_.slice(0));
+	}
+	ImGui::End();
 	gui_.end();
+	
+	ofDrawBitmapStringHighlight(ofToString(correct_rate_, 3), 10,10);
+
+}
+
+
+bool ofApp::test(int index)
+{
+	assert(index < mnist_test_.size());
+	ofPixels pixels;
+	if(mnist_test_.getData(index, pixels, test_label_)) {
+		Matrix mat = convert(pixels, 0, 1);
+		test_image_.resize(mat.n_rows,mat.n_cols,1);
+		test_image_.slice(0) = mat;
+		result_ = classifier_->proc(test_image_);
+		analyzer_history_ = classifier_->getHistory();
+		predict_label_ = result_.index_max();
+		return predict_label_ == test_label_;
+	}
+	return false;
+}
+float ofApp::testAll()
+{
+	int num = mnist_test_.size();
+	int correct = 0;
+	for(int i = 0; i < num; ++i) {
+		if(test(i)) {
+			++correct;
+		}
+	}
+	return correct/(float)num;
 }
 
 void ofApp::updateResult()
 {
-	analyzer_history_.resize(classes_.size());
-	for(int i = 0, num = classes_.size(); i < num; ++i) {
-		classifier_->proc(classes_[i]).slice(0).t();
-		analyzer_history_[i] = classifier_->getHistory();
-	}
-	result_ = classifier_->proc(test_);
+	correct_rate_ = testAll();
 }
 
-void ofApp::train()
+void ofApp::train(int index)
 {
-	for(int i = 0, num = classes_.size(); i < num; ++i) {
-		Tensor label = arma::zeros<Tensor>(num,1,1);
-		label[i] = 1;
-		trainer_->train<SoftmaxCrossEntropy>(classifier_, classes_[i], label, 0.3f);
+	assert(index < mnist_train_.size());
+	ofPixels pixels; unsigned char label;
+	if(mnist_train_.getData(index, pixels, label)) {
+		Matrix mat = convert(pixels, 0, 1);
+		Tensor image(mat.n_rows,mat.n_cols,1);
+		image.slice(0) = mat;
+		Tensor teacher = arma::zeros<Tensor>(10,1,1);
+		teacher[label] = 1;
+		trainer_->train<SoftmaxCrossEntropy>(classifier_, image, teacher, 0.005f);
+		return true;
+	}
+	return false;
+}
+void ofApp::trainRandomly(int num)
+{
+	for(int i = 0; i < num; ++i) {
+		train(ofRandom(0, mnist_train_.size()));
 	}
 }
-
+void ofApp::trainAll()
+{
+	for(int i = 0, num = mnist_train_.size(); i < num; ++i) {
+		train(i);
+	}
+}
 void ofApp::reset()
 {
 	classifier_ = std::make_shared<Network>();
@@ -202,25 +186,31 @@ void ofApp::reset()
 	classifier_->addLayer<ReLU>();
 	classifier_->addLayer<Flatten>();
 	dense_[0] = classifier_->addLayer<Dense>();
-	dense_[0]->setNumInOut(12, 5);
+	dense_[0]->setNumInOut(0, 32);
 	classifier_->addLayer<ReLU>();
 	dense_[1] = classifier_->addLayer<Dense>();
-	dense_[1]->setNumInOut(5, 2);
+	dense_[1]->setNumInOut(0, 10);
 //	classifier_->addLayer<ReLU>();
 }
 
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key){
 	switch(key) {
+		case ' ':
+			trainRandomly(100);
+			test(draw_mnist_index_);
+			break;
 		case OF_KEY_RETURN:
-			for(int i = 0; i < 100; ++i) {
-				train();
-			}
+			trainAll();
 			updateResult();
 			break;
 		case 'r':
 			reset();
 			updateResult();
+			break;
+		case 'm':
+			draw_mnist_index_ = ofRandom(0, mnist_test_.size());
+			test(draw_mnist_index_);
 			break;
 	}
 }

@@ -15,6 +15,7 @@
 		5B5181F01DA8C4978D35247A /* Helpers.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ED7A8B83362644B9EFF89B69 /* Helpers.cpp */; };
 		617C668BC73991743F15E495 /* imgui_draw.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9DC0874406E56398167C5EC7 /* imgui_draw.cpp */; };
 		7990A2D062DFDD43F5DB1090 /* EngineVk.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5465C7B73A81D63629900A56 /* EngineVk.cpp */; };
+		810A44F620ABB0680008604C /* MNISTLoader.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 810A44F420ABB0680008604C /* MNISTLoader.cpp */; };
 		81BE09052099CFF800FB42EA /* libarmadillo.8.50.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 81BE09032099CF9900FB42EA /* libarmadillo.8.50.0.dylib */; };
 		874E4B0E661C8C379B88A599 /* EngineOpenGLES.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 722322E258DBF9649FB18F21 /* EngineOpenGLES.cpp */; };
 		960286800975DEDFAAC30210 /* Network.cpp in Sources */ = {isa = PBXBuildFile; fileRef = BD629691EB1A16CE24634EDC /* Network.cpp */; };
@@ -70,6 +71,8 @@
 		6D234B02C2770E5341C7349B /* imgui.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 30; name = imgui.cpp; path = addons/ofxImGui/libs/imgui/src/imgui.cpp; sourceTree = SOURCE_ROOT; };
 		722322E258DBF9649FB18F21 /* EngineOpenGLES.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 30; name = EngineOpenGLES.cpp; path = addons/ofxImGui/src/EngineOpenGLES.cpp; sourceTree = SOURCE_ROOT; };
 		7E3920DA556CF390F6336EC3 /* imgui_internal.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 30; name = imgui_internal.h; path = addons/ofxImGui/libs/imgui/src/imgui_internal.h; sourceTree = SOURCE_ROOT; };
+		810A44F420ABB0680008604C /* MNISTLoader.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = MNISTLoader.cpp; sourceTree = "<group>"; };
+		810A44F520ABB0680008604C /* MNISTLoader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MNISTLoader.h; sourceTree = "<group>"; };
 		81BE09032099CF9900FB42EA /* libarmadillo.8.50.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libarmadillo.8.50.0.dylib; path = ../../../../../../../usr/local/Cellar/armadillo/8.500.0/lib/libarmadillo.8.50.0.dylib; sourceTree = "<group>"; };
 		81F0C0C77B47074D28E52550 /* BaseTheme.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 30; name = BaseTheme.h; path = addons/ofxImGui/src/BaseTheme.h; sourceTree = SOURCE_ROOT; };
 		8A8C4DE1F0216281F81E0F46 /* ofxImGuiLoggerChannel.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 30; name = ofxImGuiLoggerChannel.h; path = addons/ofxImGui/src/ofxImGuiLoggerChannel.h; sourceTree = SOURCE_ROOT; };
@@ -242,6 +245,8 @@
 				10CD612BC9686D425BD5C062 /* Converters.h */,
 				BD629691EB1A16CE24634EDC /* Network.cpp */,
 				1D92731047572FD22880832A /* Network.h */,
+				810A44F420ABB0680008604C /* MNISTLoader.cpp */,
+				810A44F520ABB0680008604C /* MNISTLoader.h */,
 			);
 			path = src;
 			sourceTree = SOURCE_ROOT;
@@ -344,6 +349,7 @@
 			files = (
 				E4B69E200A3A1BDC003C02F2 /* main.cpp in Sources */,
 				E4B69E210A3A1BDC003C02F2 /* ofApp.cpp in Sources */,
+				810A44F620ABB0680008604C /* MNISTLoader.cpp in Sources */,
 				03F87F6A88C20EF9F466748A /* Components.cpp in Sources */,
 				960286800975DEDFAAC30210 /* Network.cpp in Sources */,
 				2247B512E0898FB4529E1C2B /* BaseEngine.cpp in Sources */,

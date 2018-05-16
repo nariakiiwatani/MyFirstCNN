@@ -4,6 +4,7 @@
 #include "Components.h"
 #include "Network.h"
 #include "ofxImGui.h"
+#include "MNISTLoader.h"
 
 class ofApp : public ofBaseApp{
 	
@@ -25,11 +26,16 @@ public:
 	void gotMessage(ofMessage msg);
 private:
 	void updateResult();
-	void train();
+	void train(int index);
+	void trainRandomly(int num);
+	void trainAll();
+	bool test(int index);
+	float testAll();
 
-	Tensor test_;
-	std::vector<Tensor> classes_;
-	std::vector<std::vector<Tensor>> analyzer_history_;
+	Tensor test_image_;
+	unsigned char test_label_;
+	unsigned char predict_label_;
+	std::vector<Tensor> analyzer_history_;
 	Tensor result_;
 	
 	std::shared_ptr<Network> classifier_;
@@ -41,19 +47,21 @@ private:
 	ofxImGui::Gui gui_;
 	enum {
 		DRAW_INPUT,
-		DRAW_FILTER,
-		DRAW_ANALYZER,
+		DRAW_HISTORY,
 		DRAW_CLASSIFIER,
 		
 		DRAW_NUM
 	};
 	int draw_mode_=0;
-	int draw_model_index_=0;
-	int draw_filter_slice_=0;
-	int draw_analyzer_class_=0;
 	int draw_analyzer_layer_=0;
 	int draw_analyzer_slice_=0;
 	int draw_dense_index_;
 	
+	int draw_mnist_index_=0;
+	
+	float correct_rate_=0;
+	
 	void reset();
+	
+	MNISTLoader mnist_train_, mnist_test_;
 };
