@@ -25,11 +25,12 @@ public:
 	void dragEvent(ofDragInfo dragInfo);
 	void gotMessage(ofMessage msg);
 private:
-	void updateResult();
+	void updateResult(int num=-1);
 	void train(int index);
 	void trainRandomly(int num);
 	void trainAll();
 	bool test(int index);
+	float testRandomly(int num);
 	float testAll();
 
 	Tensor test_image_;
@@ -59,7 +60,10 @@ private:
 	
 	int draw_mnist_index_=0;
 	
+	float learning_rate_=0.005f;
 	float correct_rate_=0;
+	int train_batch_size_=100;
+	int test_batch_size_=100;
 	
 	void reset();
 	
