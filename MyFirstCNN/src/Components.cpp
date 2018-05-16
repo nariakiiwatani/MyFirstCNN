@@ -36,7 +36,7 @@ Tensor Flatten::backward(const Tensor &t, float learning_rate)
 
 Convolution::Convolution()
 {
-	filter_ = arma::randn<Tensor>(3,3,3);
+	filter_ = arma::randn<Tensor>(5,5,4);
 }
 
 Tensor Convolution::forward(const Tensor &t)

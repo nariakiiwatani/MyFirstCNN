@@ -74,10 +74,14 @@ void ofApp::draw(){
 	}
 	ImGui::End();
 	if(ImGui::Begin("Preview")) {
-		ImGui::SliderInt("mode", &draw_mode_, 0, DRAW_NUM-1);
+		if(ImGui::SliderInt("mode", &draw_mode_, 0, DRAW_NUM-1) && draw_mode_ == DRAW_INPUT) {
+			test(draw_mnist_index_);
+		}
 		switch(draw_mode_) {
 			case DRAW_INPUT:
-				ImGui::SliderInt("index", &draw_mnist_index_, 0, mnist_test_.size()-1);
+				if(ImGui::SliderInt("index", &draw_mnist_index_, 0, mnist_test_.size()-1)) {
+					test(draw_mnist_index_);
+				}
 				break;
 			case DRAW_HISTORY:
 				ImGui::SliderInt("layer", &draw_analyzer_layer_, 0, analyzer_history_.size()-1);
@@ -118,7 +122,7 @@ bool ofApp::test(int index)
 	assert(index < mnist_test_.size());
 	ofPixels pixels;
 	if(mnist_test_.getData(index, pixels, test_label_)) {
-		Matrix mat = convert(pixels, 0, 1);
+		Matrix mat = convert(pixels, -1, 1);
 		test_image_.resize(mat.n_rows,mat.n_cols,1);
 		test_image_.slice(0) = mat;
 		result_ = classifier_->proc(test_image_);
@@ -161,8 +165,7 @@ void ofApp::train(int index)
 	assert(index < mnist_train_.size());
 	ofPixels pixels; unsigned char label;
 	if(mnist_train_.getData(index, pixels, label)) {
-		draw_mnist_index_ = index;
-		Matrix mat = convert(pixels, 0, 1);
+		Matrix mat = convert(pixels, -1, 1);
 		Tensor image(mat.n_rows,mat.n_cols,1);
 		image.slice(0) = mat;
 		Tensor teacher = arma::zeros<Tensor>(10,1,1);
@@ -188,7 +191,6 @@ void ofApp::reset()
 {
 	classifier_ = std::make_shared<Network>();
 	
-	classifier_->addLayer<Duplicate>()->size_ = 3;
 	convolution_ = classifier_->addLayer<Convolution>();
 	classifier_->addLayer<ReLU>();
 	auto pooling = classifier_->addLayer<MaxPooling>();
@@ -201,7 +203,7 @@ void ofApp::reset()
 	classifier_->addLayer<ReLU>();
 	classifier_->addLayer<Flatten>();
 	dense_[0] = classifier_->addLayer<Dense>();
-	dense_[0]->setNumInOut(0, 32);
+	dense_[0]->setNumInOut(0, 256);
 	classifier_->addLayer<ReLU>();
 	dense_[1] = classifier_->addLayer<Dense>();
 	dense_[1]->setNumInOut(0, 10);
